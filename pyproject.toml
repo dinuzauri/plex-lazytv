@@ -1,0 +1,15 @@
+[project]
+name = "plex-lazytv"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "plexapi>=4.17.1",
+    "requests>=2.32.5",
+]
+
+[dependency-groups]
+dev = [
+    "pdbp>=1.8.1",
+]
