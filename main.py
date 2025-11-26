@@ -1,12 +1,14 @@
+import time
 import logging
 import os
 import random
 
+import requests
 from plexapi.collection import Collection
+from plexapi.library import ShowSection
+from plexapi.myplex import MyPlexAccount
 from plexapi.playlist import Playlist
 from plexapi.server import CONFIG, PlexServer
-from plexapi.myplex import MyPlexAccount
-from plexapi.library import ShowSection
 
 filename = os.path.basename(__file__)
 filename = filename.split(".")[0]
@@ -49,8 +51,9 @@ if not TAUTULLI_URL:
 if not TAUTULLI_APIKEY:
     TAUTULLI_APIKEY = CONFIG.data["auth"].get("tautulli_apikey")
 
-plex: PlexServer = PlexServer(PLEX_URL, PLEX_TOKEN)
-account: MyPlexAccount = MyPlexAccount()
+sess = requests.Session()
+plex = PlexServer(PLEX_URL, PLEX_TOKEN, session=sess)
+account: MyPlexAccount = plex.myPlexAccount()
 tv: ShowSection = plex.library.section("TV Shows")
 
 
@@ -138,7 +141,7 @@ def fill_playlist(collection):
 
 if __name__ == "__main__":
     # add a delay to avoid race conditions
-    # time.sleep(30)
+    time.sleep(30)
 
     lazy_collections: list[Collection] = get_lazy_collections()
 
