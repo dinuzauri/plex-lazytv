@@ -2,7 +2,6 @@ import logging
 import os
 import random
 
-import pdbp
 from plexapi.collection import Collection
 from plexapi.playlist import Playlist
 from plexapi.server import CONFIG, PlexServer
