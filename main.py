@@ -39,7 +39,7 @@ TAUTULLI_APIKEY = ""
 # size of the lazy playlist
 PLAYLIST_SIZE = 6
 # keyword for the name of collection from which the playlist will be populated
-LAZY_COLLECTION_PATTERN = "lazyTV"
+LAZY_COLLECTION_PATTERN = "[lazyTV]"
 
 if not PLEX_URL:
     PLEX_URL = CONFIG.data["auth"].get("server_baseurl")
@@ -65,14 +65,13 @@ def get_lazy_collections() -> list:
 
 
 def lazy_playlist_exists(name: str):
-    pdbp.set_trace()
     for playlist in plex.playlists():
         if playlist.title == name and playlist.playlistType == "video":
             return True
     return False
 
 
-def get_rand_tv_ep(collection: Collection, new_playlist:bool=False):
+def get_rand_tv_ep(collection: Collection, new_playlist: bool = False):
     show = get_rand_show(collection)
     logger.debug(f"{show} picked randomly")
     playlist_episodes = [] if new_playlist else plex.playlist(collection.title).items()
@@ -88,13 +87,14 @@ def get_rand_tv_ep(collection: Collection, new_playlist:bool=False):
     return None
 
 
-def create_playlist(collection:Collection):
+def create_playlist(collection: Collection):
     logger.info("Creating a new playlist")
     Playlist.create(
         server=plex,
         title=collection.title,
         items=get_rand_tv_ep(collection=collection, new_playlist=True),
     )
+
 
 def get_rand_show(collection):
     shows = collection.items()
@@ -106,8 +106,8 @@ def get_rand_show(collection):
 
 
 def clean_lazy_playlist(name: str) -> bool:
-    logger.debug("Attempting to clean playlist")
     lazy_playlist = plex.playlist(name)
+    logger.debug(f"Cleaning the playlist {lazy_playlist}")
     episodes = lazy_playlist.items()
     incomplete = len(episodes) < PLAYLIST_SIZE
     logger.debug(f"Playlist contains {len(episodes)} items")
@@ -116,7 +116,7 @@ def clean_lazy_playlist(name: str) -> bool:
             lazy_playlist.removeItems(episode)
             logger.info(f"{episode} has been removed from the playlist")
             incomplete = True
-    logger.debug("Playlist cleaning done!")
+    logger.debug(f"Playlist incomplete status: {incomplete}")
     return incomplete
 
 
