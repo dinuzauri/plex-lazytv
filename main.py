@@ -1,5 +1,6 @@
 import random
 import time
+from configparser import ConfigParser
 
 import requests
 from plexapi.collection import Collection
@@ -7,7 +8,6 @@ from plexapi.library import ShowSection
 from plexapi.myplex import MyPlexAccount
 from plexapi.playlist import Playlist
 from plexapi.server import CONFIG, PlexServer
-from configparser import ConfigParser
 
 secrets = ConfigParser()
 secrets.read("config.ini")
