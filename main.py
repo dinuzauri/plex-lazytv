@@ -1,7 +1,5 @@
-import time
-import logging
-import os
 import random
+import time
 
 import requests
 from plexapi.collection import Collection
@@ -9,32 +7,10 @@ from plexapi.library import ShowSection
 from plexapi.myplex import MyPlexAccount
 from plexapi.playlist import Playlist
 from plexapi.server import CONFIG, PlexServer
+from configparser import ConfigParser
 
-filename = os.path.basename(__file__)
-filename = filename.split(".")[0]
-
-logger = logging.getLogger(filename)
-logger.setLevel(logging.DEBUG)
-
-error_format = logging.Formatter("%(asctime)s:%(name)s:%(funcName)s:%(message)s")
-stream_format = logging.Formatter("%(message)s")
-
-file_handler = logging.FileHandler("{}.log".format(filename))
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(error_format)
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(stream_format)
-
-logger.addHandler(file_handler)
-logger.addHandler(stream_handler)
-
-
-# Edit server settings here or in the plex api config file
-PLEX_URL = ""
-PLEX_TOKEN = ""
-TAUTULLI_URL = ""
-TAUTULLI_APIKEY = ""
-
+secrets = ConfigParser()
+secrets.read("config.ini")
 
 # CONSTANTS
 # size of the lazy playlist
@@ -42,14 +18,25 @@ PLAYLIST_SIZE = 6
 # keyword for the name of collection from which the playlist will be populated
 LAZY_COLLECTION_PATTERN = "[lazyTV]"
 
-if not PLEX_URL:
-    PLEX_URL = CONFIG.data["auth"].get("server_baseurl")
-if not PLEX_TOKEN:
-    PLEX_TOKEN = CONFIG.data["auth"].get("server_token")
-if not TAUTULLI_URL:
-    TAUTULLI_URL = CONFIG.data["auth"].get("tautulli_baseurl")
-if not TAUTULLI_APIKEY:
-    TAUTULLI_APIKEY = CONFIG.data["auth"].get("tautulli_apikey")
+
+# Edit server settings here, in the plex api config file or the config.ini file in the root of the folder
+PLEX_URL = (
+    "" or secrets["auth"]["server_baseurl"] or CONFIG.data["auth"].get("server_baseurl")
+)
+PLEX_TOKEN = (
+    "" or secrets["auth"]["server_token"] or CONFIG.data["auth"].get("server_token")
+)
+TAUTULLI_URL = (
+    ""
+    or secrets["auth"]["tautulli_baseurl"]
+    or CONFIG.data["auth"].get("tautulli_baseurl")
+)
+TAUTULLI_APIKEY = (
+    ""
+    or secrets["auth"]["tautulli_apikey"]
+    or CONFIG.data["auth"].get("tautulli_apikey")
+)
+
 
 sess = requests.Session()
 plex = PlexServer(PLEX_URL, PLEX_TOKEN, session=sess)
@@ -75,7 +62,7 @@ def lazy_playlist_exists(name: str):
 
 def get_rand_tv_ep(collection: Collection, new_playlist: bool = False):
     show = get_rand_show(collection)
-    logger.debug(f"{show} picked randomly")
+    print(f"{show} picked randomly")
     playlist_episodes = [] if new_playlist else plex.playlist(collection.title).items()
     seasons = show.seasons()
     for season in seasons:
@@ -90,7 +77,7 @@ def get_rand_tv_ep(collection: Collection, new_playlist: bool = False):
 
 
 def create_playlist(collection: Collection):
-    logger.info("Creating a new playlist")
+    print("Creating a new playlist")
     Playlist.create(
         server=plex,
         title=collection.title,
@@ -109,31 +96,31 @@ def get_rand_show(collection):
 
 def clean_lazy_playlist(name: str) -> bool:
     lazy_playlist = plex.playlist(name)
-    logger.debug(f"Cleaning the playlist {lazy_playlist}")
+    print(f"Cleaning the playlist {lazy_playlist}")
     episodes = lazy_playlist.items()
     incomplete = len(episodes) < PLAYLIST_SIZE
-    logger.debug(f"Playlist contains {len(episodes)} items")
+    print(f"Playlist contains {len(episodes)} items")
     for episode in episodes:
         if episode.isPlayed:
             lazy_playlist.removeItems(episode)
-            logger.info(f"{episode} has been removed from the playlist")
+            print(f"{episode} has been removed from the playlist")
             incomplete = True
-    logger.debug(f"Playlist incomplete status: {incomplete}")
+    print(f"Playlist incomplete status: {incomplete}")
     return incomplete
 
 
 def fill_playlist(collection):
-    logger.debug("Attempting to fill in the playlist")
+    print("Attempting to fill in the playlist")
     lazy_playlist = plex.playlist(collection.title)
     lazy_episodes = lazy_playlist.items()
     needed_episodes = PLAYLIST_SIZE - len(lazy_episodes)
-    logger.debug(f"{needed_episodes} new episodes are needed")
+    print(f"{needed_episodes} new episodes are needed")
     playlist_spot = 1
     while playlist_spot <= needed_episodes:
         episode = get_rand_tv_ep(collection)
         if episode:
             lazy_playlist.addItems(episode)
-            logger.info(f"{episode} added to the playlist")
+            print(f"{episode} added to the playlist")
             playlist_spot += 1
         else:
             playlist_spot -= 1
@@ -147,16 +134,17 @@ if __name__ == "__main__":
 
     for collection in lazy_collections:
         try:
-            logger.info("Lazy TV script started...")
+            print("Lazy TV script started...")
             if lazy_playlist_exists(collection.title):
-                logger.info("Lazy playlist detected..")
+                print("Lazy playlist detected..")
                 any_episodes_were_removed = clean_lazy_playlist(collection.title)
                 if any_episodes_were_removed:
                     fill_playlist(collection)
             else:
-                logger.info("Lazy playlist not detected..")
+                print("Lazy playlist not detected..")
                 create_playlist(collection)
                 fill_playlist(collection)
-            logger.info("Lazy TV script stopped")
+            print("Lazy TV script stopped")
         except Exception as e:
-            logger.exception(e)
+            print(e)
+
